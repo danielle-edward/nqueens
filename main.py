@@ -86,11 +86,25 @@ def generateBoard(n):
 
 
 def solveBoard():
+    global queensOnBoard
     n = len(queensOnBoard)
+    moves = 0
+
+   
+        
+    
     while(not all(i.conflict is False for i in queensOnBoard)):
         randQueen = random.randint(1, n-1)
         curQueen = queensOnBoard[randQueen]
         currentConflict = calculateConflicts(queensOnBoard[randQueen].coords)
+
+        if moves == 60:
+            queensOnBoard = []
+            generateBoard(n)
+            moves = 0
+            print("reset")
+
+
         
         if queensOnBoard[randQueen].conflict is True:
             for y in range(n):
@@ -98,7 +112,6 @@ def solveBoard():
                 
                 if column != queensOnBoard[randQueen].coords[1]:
                     tempConflict = calculateConflicts((queensOnBoard[randQueen].coords[0], column))
-                    print(tempConflict)
                     if tempConflict < currentConflict:
                         queensOnBoard[randQueen].setCoords((curQueen.coords[0], column))
                         currentConflict = tempConflict
@@ -112,8 +125,9 @@ def solveBoard():
                             currentConflict = tempConflict
                             if currentConflict == 0:
                                 queensOnBoard[randQueen].setConflict(False)
-            
-
+ 
+            moves = moves + 1
+          
     queensOnBoard.sort(key=lambda x: x.coords[0], reverse=False)
     matrix = []
     for i in queensOnBoard:
@@ -150,7 +164,7 @@ def main():
     #print("Should be 0: " + str(calculateConflicts(Q3.coords)))
     #print("Should be 2: " + str(calculateConflicts(Q4)))
 
-    generateBoard(4)
+    generateBoard(8)
 
     #for i in queensOnBoard:
         #print(str(i.coords) + " is conflicting: " + str(i.conflict))
