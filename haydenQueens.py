@@ -6,7 +6,7 @@ class NQueens:
         self.board, self.queenPositions, self.emptyColumns = self.getNewBoard(n)
         self.n = n
 
-    # use greedy algorithm to initially place queens
+    # use NASA paper algorithm to initially place queens
     def getNewBoard(self,n):
     # queens are represented as ones in 2d list of all zeros
     # Since it's a 2d list, each element is a row of zeros except for the queen
@@ -15,26 +15,54 @@ class NQueens:
         lis = [ i for i in range(n) ]
         emptyColumns = set(lis)
 
+        # place the first queen randomly on the first row
         randomIndex = random.randint(0,n-1)
         board[0][randomIndex] = 1
         queensPos.append((0,randomIndex))
         emptyColumns.discard(randomIndex)
+
+        # populate each subsequent row with a queen
         for row in range(1,n):
-            minConflicts = n
             bestPos = (-1,-1)
-            for col in range(n):
+            found = False # if a "best position is found
+
+            # first look for 0 conflict positions (taken from NASA paper initialization type 2)
+            for col in emptyColumns:
                 conflicts = self.specificQueenConflicts((row,col),queensPos)
                 if conflicts == 0:
                     bestPos = (row,col)
+                    found == True
                     break
-                else:
-                    if conflicts < minConflicts:
-                        minConflicts = conflicts
-                        bestPos = (row,col)
+            
+            # if not found, choose a random empty column (taken from NASA paper initialization type 2)
+            if not found:
+                col = random.choice(tuple(emptyColumns))
+                bestPos = (row,col)
+            
+            # # next randomly sample for 1 conflict positions until found or exceeded sample max
+            # sample = 0
+            # while not found and sample < n:
+            #     col = random.randint(0,n-1)
+            #     conflicts = self.specificQueenConflicts((row,col),queensPos)
+            #     if conflicts == 1:
+            #         bestPos = (row,col)
+            #         found == True
+            #     sample += 1
+
+            # # finally if sample max is exceeded use the traditional search for a minConflict position
+            # minConflicts = n
+            # if not found:
+            #     for col in range(n):
+            #         conflicts = self.specificQueenConflicts((row,col),queensPos)
+            #         if conflicts < minConflicts:
+            #             minConflicts = conflicts
+            #             bestPos = (row,col)
+
+            assert bestPos != (-1,-1) # make sure a valid position was found
 
             board[bestPos[0]][bestPos[1]] = 1
             queensPos.append((bestPos[0], bestPos[1]))
-            emptyColumns.add(bestPos[1])
+            emptyColumns.discard(bestPos[1])
         # print(board)
         # print(emptyColumns)
         # print(queensPos)
@@ -139,7 +167,7 @@ class NQueens:
     def updateEmptyColumns(self,pos):
         col = pos[1]
         for row in range(self.n):
-            # if there is a queen on any row at that specific column, then don't update
+            # if there is a queen on any row of that specific column, then don't update
             if self.board[row][col] == 1:
                 return
 
@@ -153,7 +181,7 @@ def solveBoard(size):
     moves = 0
     print("Starting...")
     while not NQ.allQueensSafe():
-        if moves > 60:
+        if moves > 100:
             print("Resetting...")
             moves = 0
             NQ = NQueens(n) # reset board since on average a board can be solved in around 50 moves, prevents getting stuck
@@ -167,7 +195,7 @@ def solveBoard(size):
 
         found = False #skip the next rest of the search heuristics if a position has been found
 
-        start = time.time()
+        # start = time.time()
         # look first for 0 conflict positions using "emptyColumns" (taken from NASA paper)
         emptyColPositions = NQ.emptyColumnPositions(pickedQueen)
         for pos in emptyColPositions:
@@ -178,14 +206,14 @@ def solveBoard(size):
                 found = True
                 minConflictPosition = pos
                 break
-        end = time.time()
-        print(end-start)
+        # end = time.time()
+        # print(end-start)
         
         # start = time.time()
         # if 0 conflict positions cannot be found, then randomly sample for 1 conflict positions
         # usually found pretty quickly though theoretically can go on forever (taken from NASA paper)
         samples = 0
-        while not found and samples < n:
+        while not found and samples < n*n:
             randomIndex = random.randint(0,n-1)
             pos = (pickedQueen[0],randomIndex) #possible positions are only in your pickedQueen's row and a random column
             NQ.moveQueen(pickedQueen,pos) # move queen
@@ -194,7 +222,7 @@ def solveBoard(size):
             if newNumberOfConflicts == 1:
                 found = True
                 minConflictPosition = pos
-            samples+=1
+            samples += 1
         # end = time.time()
         # print(end-start)
 
@@ -213,6 +241,7 @@ def solveBoard(size):
         # end = time.time()
         # print(end-start)
 
+        assert minConflictPosition != (-1,-1)
         NQ.moveQueen(pickedQueen,minConflictPosition,True)# move queen to least conflict spot
         # print(moves)
         moves+=1    
