@@ -3,155 +3,101 @@ import random
 import time
 class NQueens:
     def __init__(self,n):
-        self.board, self.queenPositions, self.emptyColumns = self.getNewBoard(n)
         self.n = n
+        # instead of going through all queens multiple times to check for row, column, and diagonal conflicts, memoize them for easier conflict checks
+        self.colConflicts = [0] * n          # This list keeps track of queens that conflict on the same column.
+        self.diag1Conflicts = [0] * (2*n-1)  # There are 2n-1 diagonals going in the /// direction, we have to account for possible conflicts on those diagonals
+                                             # diag1Conflicts[0] is (0,0), diag1Conflicts[1] is (1,0),(0,1), diag1Conflicts[2] is (2,0),(1,1),(0,2) ... etc
+        self.diag2Conflicts = [0] * (2*n-1)  # There are 2n-1 diagonals going in the \\\ direction, we have to account for possible conflicts on those diagonals
+                                             # diag2Conflicts[0] is (n,0), diag1Conflicts[1] is (n-1,0),(n,1), diag1Conflicts[2] is (n-2,0),(n-1,1),(n,2) ... etc
+        self.board = [ [0] * n for _ in range(n) ]
+        self.queenPositions = []
+        self.emptyColumns = set([ i for i in range(n) ])
+        self.initialize(n)
 
     # use NASA paper algorithm to initially place queens
-    def getNewBoard(self,n):
-    # queens are represented as ones in 2d list of all zeros
-    # Since it's a 2d list, each element is a row of zeros except for the queen
-        board = [ [0] * n for _ in range(n) ]
-        queensPos = []
-        lis = [ i for i in range(n) ]
-        emptyColumns = set(lis)
-
+    def initialize(self,n):
         # place the first queen randomly on the first row
         randomIndex = random.randint(0,n-1)
-        board[0][randomIndex] = 1
-        queensPos.append((0,randomIndex))
-        emptyColumns.discard(randomIndex)
+        self.addQueen(0,randomIndex)
 
         # populate each subsequent row with a queen
         for row in range(1,n):
             bestPos = (-1,-1)
-            found = False # if a "best position is found
+            found = False # if a "best" position is found
 
             # first look for 0 conflict positions (taken from NASA paper initialization type 2)
-            for col in emptyColumns:
-                conflicts = self.specificQueenConflicts((row,col),queensPos)
+            for col in self.emptyColumns:
+                conflicts = self.numConflicts((row,col))
                 if conflicts == 0:
                     bestPos = (row,col)
-                    found == True
+                    found = True
                     break
 
             # if not found, choose a random empty column (taken from NASA paper initialization type 2)
             if not found:
-                col = random.choice(tuple(emptyColumns))
+                col = random.choice(tuple(self.emptyColumns))
                 bestPos = (row,col)
 
-            # # next randomly sample for 1 conflict positions until found or exceeded sample max
-            # sample = 0
-            # while not found and sample < n:
-            #     col = random.randint(0,n-1)
-            #     conflicts = self.specificQueenConflicts((row,col),queensPos)
-            #     if conflicts == 1:
-            #         bestPos = (row,col)
-            #         found == True
-            #     sample += 1
-
-            # # finally if sample max is exceeded use the traditional search for a minConflict position
-            # minConflicts = n
-            # if not found:
-            #     for col in range(n):
-            #         conflicts = self.specificQueenConflicts((row,col),queensPos)
-            #         if conflicts < minConflicts:
-            #             minConflicts = conflicts
-            #             bestPos = (row,col)
-
             assert bestPos != (-1,-1) # make sure a valid position was found
-
-            board[bestPos[0]][bestPos[1]] = 1
-            queensPos.append((bestPos[0], bestPos[1]))
-            emptyColumns.discard(bestPos[1])
-        # print(board)
-        # print(emptyColumns)
-        # print(queensPos)
-        return (board,queensPos,emptyColumns)
+            self.addQueen(bestPos[0],bestPos[1])
 
     # returns true if problem is solved and all queens safe, false otherwise
     def allQueensSafe(self):
         for pos in self.queenPositions:
-            if self.UnderAttack(pos):
+            if self.numConflicts(pos) > 0:
                 return False
         return True
 
-    # checks column conflict
-    def attackViaCol(self,pos):
-        for queen in self.queenPositions:
-            if pos[1] == queen[1] and queen != pos: # last inqueality checks to make sure you arent comparing the same queen
-                return True
-        return False
+    # Given a row and a column, return how many current queen's could reach that square.
+    def numConflicts(self,pos):
+        row, col = pos[0], pos[1]
+        return self.colConflicts[col] + self.diag1Conflicts[(self.n-1)+(col-row)] + self.diag2Conflicts[col+row]
 
-    # checks row conflicts
-    def attackViaRow(self,pos):
-        for queen in self.queenPositions:
-            if pos[0] == queen[0] and queen != pos:
-                return True
-        return False
+    def pickQueen(self):
+        num_vars_violated = 0
+        candidates = [] # possible queens to fix
+        num_vios = 0 # The number of violations for a row/column position.
+        for pos in self.queenPositions:
+            num_vios = self.numConflicts(pos)
+            if num_vios != 3:
+                candidates.append(pos)
+        num_vars_violated = len(candidates)
+        if num_vars_violated == 0:  # If the array of possible options is empty return -1,-1
+            return (-1,-1)
+        return random.choice(candidates)
 
-    # checks diagonal conflicts
-    def attackViaDiagonal(self,pos):
-        for queen in self.queenPositions:
-            if abs(queen[0] - pos[0]) == abs(queen[1] - pos[1]) and queen != pos:
-                return True
-        return False
+    # places a queen and adds conflicts resulting in placing the queen there
+    def addQueen(self,row,col):
+        assert self.board[row][col] == 0
+        # above assert will fail if the position already has a queen
 
-    # checks all conflicts by calling 3 attack methods above that check specific rows/columns/diagonals
-    def UnderAttack(self,position):
-        if self.attackViaDiagonal(position):
-            return True
-        if self.attackViaRow(position):
-            return True
-        if self.attackViaCol(position):
-            return True
+        self.board[row][col] = 1
+        self.queenPositions.append((row,col))
+        self.colConflicts[col] += 1
+        self.diag1Conflicts[(self.n-1)+(col-row)] += 1
+        self.diag2Conflicts[row+col] += 1
+        self.emptyColumns.discard(col)
 
-        return False
+    # removes queen and takes away conflicts the queen originally caused
+    def removeQueen(self,row,col):
+        assert self.board[row][col] == 1
+        assert self.colConflicts[col] > 0
+        assert self.diag1Conflicts[(self.n-1)+(col-row)] > 0
+        assert self.diag2Conflicts[row+col] > 0
 
-    # returns number of pieces attacking queen at position pos
-    # otherQueens is an actual array when the constructor calls this function
-    def specificQueenConflicts(self,pos,otherQueens = None):
-        # this just differentiates from when the constructor calls this function vs when solveBoard() calls it
-        # only to prevent duplicate code
-        allQueens = []
-        if otherQueens:
-            allQueens = otherQueens
-        else:
-            allQueens = self.queenPositions
-
-        count = 0
-        for queen in allQueens:
-            if queen == pos:
-                continue
-            if abs(queen[0] - pos[0]) == abs(queen[1] - pos[1]):
-                count += 1
-            if pos[0] == queen[0]:
-                count += 1
-            if pos[1] == queen[1]:
-                count += 1
-
-        return count
-
-    # returns position of random queen
-    def pickRandomQueen(self):
-        newIndex = random.randint(0,self.n - 1)
-        return self.queenPositions[newIndex]
+        self.board[row][col] = 0
+        self.queenPositions.remove((row,col))
+        self.colConflicts[col] -= 1
+        self.diag1Conflicts[(self.n-1)+(col-row)] -= 1
+        self.diag2Conflicts[row+col] -= 1
+        self.updateEmptyColumns(col)
 
     # moves quen from startPos to endPos
-    # isActualMove is True only when a final move decision has been made
-    # isActualMove is False when the move is only to check conflicts
-    # this distiction prevents updating empty columns on moves which are only to check conflict
-    def moveQueen(self,startPos,endPos,isActualMove=False):
-        assert self.board[startPos[0]][startPos[1]] == 1
-        # above assert will fail if the start position does not have a queen
-
-        self.board[startPos[0]][startPos[1]] = 0
-        self.board[endPos[0]][endPos[1]] = 1
-        self.queenPositions.remove(startPos)
-        self.queenPositions.append(endPos)
-
-        if isActualMove:
-            self.emptyColumns.discard(endPos[1])
-            self.updateEmptyColumns(startPos)
+    def moveQueen(self,startPos,endPos):
+        # print("Moving queen from",startPos,"to",endPos)
+        self.removeQueen(startPos[0],startPos[1])
+        self.addQueen(endPos[0],endPos[1])
 
     # same thing as availablePositions() except you only return those with empty columns
     def emptyColumnPositions(self,pos):
@@ -164,15 +110,9 @@ class NQueens:
         return availablePos
 
     # checks if the column where the queen moved from is now empty, if it is then update
-    def updateEmptyColumns(self,pos):
-        col = pos[1]
-        for row in range(self.n):
-            # if there is a queen on any row of that specific column, then don't update
-            if self.board[row][col] == 1:
-                return
-
-        self.emptyColumns.add(col)
-
+    def updateEmptyColumns(self,col):
+        if self.colConflicts[col] == 0:
+            self.emptyColumns.add(col)
 
 # min conflicts solver
 def solveBoard(size):
@@ -182,7 +122,7 @@ def solveBoard(size):
     print("Starting...")
     while not NQ.allQueensSafe():
         if moves > 100:
-            #print("Resetting...")
+            print("Resetting...")
             moves = 0
             NQ = NQueens(n) # reset board since on average a board can be solved in around 50 moves, prevents getting stuck
 
@@ -190,60 +130,52 @@ def solveBoard(size):
         # this means queens cannot move from one row to another nor should they consider this when checking for possible candidate positinos
         # since every queen occupies a unique row
 
-        pickedQueen = NQ.pickRandomQueen()
+        pickedQueen = NQ.pickQueen()
+        # sucess
+        if pickedQueen == (-1,-1):
+            break
+
         minConflictPosition = (-1,-1)
 
         found = False #skip the next rest of the search heuristics if a position has been found
 
-        # start = time.time()
-        # look first for 0 conflict positions using "emptyColumns" (taken from NASA paper)
-        emptyColPositions = NQ.emptyColumnPositions(pickedQueen)
-        for pos in emptyColPositions:
-            NQ.moveQueen(pickedQueen,pos) # move queen
-            newNumberOfConflicts = NQ.specificQueenConflicts(pos)
-            NQ.moveQueen(pos,pickedQueen) # move queen back
-            if newNumberOfConflicts == 0:
-                found = True
-                minConflictPosition = pos
-                break
-        # end = time.time()
-        # print(end-start)
+        # # look first for 0 conflict positions using "emptyColumns" (taken from NASA paper)
+        # emptyColPositions = NQ.emptyColumnPositions(pickedQueen)
+        # for pos in emptyColPositions:
+        #     newNumberOfConflicts = NQ.numConflicts(pos)
+        #     if newNumberOfConflicts == 0:
+        #         found = True
+        #         minConflictPosition = pos
+        #         break
 
-        # start = time.time()
-        # if 0 conflict positions cannot be found, then randomly sample for 1 conflict positions
-        # usually found pretty quickly though theoretically can go on forever (taken from NASA paper)
-        samples = 0
-        while not found and samples < n*n:
-            randomIndex = random.randint(0,n-1)
-            pos = (pickedQueen[0],randomIndex) #possible positions are only in your pickedQueen's row and a random column
-            NQ.moveQueen(pickedQueen,pos) # move queen
-            newNumberOfConflicts = NQ.specificQueenConflicts(pos)
-            NQ.moveQueen(pos,pickedQueen) # move queen back
-            if newNumberOfConflicts == 1:
-                found = True
-                minConflictPosition = pos
-            samples += 1
-        # end = time.time()
-        # print(end-start)
+        # # if 0 conflict positions cannot be found, then randomly sample for 1 conflict positions
+        # # usually found pretty quickly though theoretically can go on forever (taken from NASA paper)
+        # samples = 0
+        # while not found and samples < n*n:
+        #     randomIndex = random.randint(0,n-1)
+        #     pos = (pickedQueen[0],randomIndex) # possible positions are only in your pickedQueen's row and a random column
+        #     newNumberOfConflicts = NQ.numConflicts(pos)
+        #     if newNumberOfConflicts == 1:
+        #         found = True
+        #         minConflictPosition = pos
+        #     samples += 1
 
-        # start = time.time()
-        minAttacks = n + 1 # n + 1 is greater than any possibility of attacks so this is guaranteed to get minimized
         #normal search through all positions (while staying in the same row)
         if not found:
-            for x in range(n): # iterate through all positions of pickedQueen and move to position of minimum conflict
-                pos = (pickedQueen[0],x) # possible positions are in your pickedQueen's row and a column from 0 to n-1
-                NQ.moveQueen(pickedQueen,pos)
-                newNumberOfConflicts = NQ.specificQueenConflicts(pos)
-                if newNumberOfConflicts < minAttacks:
-                    minConflictPosition = pos
-                    minAttacks = newNumberOfConflicts
-                NQ.moveQueen(pos,pickedQueen) # move queen back
-        # end = time.time()
-        # print(end-start)
+            minn = float('inf')
+            candidates = []
+            for col in range(n): # iterate through all positions of pickedQueen and move to position of minimum conflict
+                pos = (pickedQueen[0],col) # possible positions are in your pickedQueen's row and a column from 0 to n-1
+                newNumberOfConflicts = NQ.numConflicts(pos)
+                if newNumberOfConflicts < minn:
+                    minn = newNumberOfConflicts
+                    candidates = [pos]
+                elif newNumberOfConflicts == minn:
+                    candidates.append(pos)
+            minConflictPosition = random.choice(candidates)
 
         assert minConflictPosition != (-1,-1)
-        NQ.moveQueen(pickedQueen,minConflictPosition,True)# move queen to least conflict spot
-        # print(moves)
+        NQ.moveQueen(pickedQueen,minConflictPosition)# move queen to least conflict spot
         moves+=1
 
     pos = NQ.queenPositions
