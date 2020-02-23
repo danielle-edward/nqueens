@@ -33,12 +33,12 @@ class NQueens:
                     bestPos = (row,col)
                     found == True
                     break
-            
+
             # if not found, choose a random empty column (taken from NASA paper initialization type 2)
             if not found:
                 col = random.choice(tuple(emptyColumns))
                 bestPos = (row,col)
-            
+
             # # next randomly sample for 1 conflict positions until found or exceeded sample max
             # sample = 0
             # while not found and sample < n:
@@ -69,7 +69,7 @@ class NQueens:
         return (board,queensPos,emptyColumns)
 
     # returns true if problem is solved and all queens safe, false otherwise
-    def allQueensSafe(self): 
+    def allQueensSafe(self):
         for pos in self.queenPositions:
             if self.UnderAttack(pos):
                 return False
@@ -109,7 +109,7 @@ class NQueens:
 
     # returns number of pieces attacking queen at position pos
     # otherQueens is an actual array when the constructor calls this function
-    def specificQueenConflicts(self,pos,otherQueens = None): 
+    def specificQueenConflicts(self,pos,otherQueens = None):
         # this just differentiates from when the constructor calls this function vs when solveBoard() calls it
         # only to prevent duplicate code
         allQueens = []
@@ -132,15 +132,15 @@ class NQueens:
         return count
 
     # returns position of random queen
-    def pickRandomQueen(self): 
+    def pickRandomQueen(self):
         newIndex = random.randint(0,self.n - 1)
         return self.queenPositions[newIndex]
 
     # moves quen from startPos to endPos
     # isActualMove is True only when a final move decision has been made
-    # isActualMove is False when the move is only to check conflicts 
+    # isActualMove is False when the move is only to check conflicts
     # this distiction prevents updating empty columns on moves which are only to check conflict
-    def moveQueen(self,startPos,endPos,isActualMove=False): 
+    def moveQueen(self,startPos,endPos,isActualMove=False):
         assert self.board[startPos[0]][startPos[1]] == 1
         # above assert will fail if the start position does not have a queen
 
@@ -182,13 +182,13 @@ def solveBoard(size):
     print("Starting...")
     while not NQ.allQueensSafe():
         if moves > 100:
-            print("Resetting...")
+            #print("Resetting...")
             moves = 0
             NQ = NQueens(n) # reset board since on average a board can be solved in around 50 moves, prevents getting stuck
 
         # General Note: when finding possible places to move the randomly picked queen, we retrict their search to the row that they're currently in
         # this means queens cannot move from one row to another nor should they consider this when checking for possible candidate positinos
-        # since every queen occupies a unique row 
+        # since every queen occupies a unique row
 
         pickedQueen = NQ.pickRandomQueen()
         minConflictPosition = (-1,-1)
@@ -208,7 +208,7 @@ def solveBoard(size):
                 break
         # end = time.time()
         # print(end-start)
-        
+
         # start = time.time()
         # if 0 conflict positions cannot be found, then randomly sample for 1 conflict positions
         # usually found pretty quickly though theoretically can go on forever (taken from NASA paper)
@@ -244,7 +244,7 @@ def solveBoard(size):
         assert minConflictPosition != (-1,-1)
         NQ.moveQueen(pickedQueen,minConflictPosition,True)# move queen to least conflict spot
         # print(moves)
-        moves+=1    
+        moves+=1
 
     pos = NQ.queenPositions
     for p in pos:
