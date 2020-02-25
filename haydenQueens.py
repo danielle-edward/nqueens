@@ -11,6 +11,7 @@ class NQueens:
                                              # diag1Conflicts[0] is (0,0), diag1Conflicts[1] is (1,0),(0,1), diag1Conflicts[2] is (2,0),(1,1),(0,2) ... etc
         self.diag2Conflicts = [0] * (2*n-1)  # There are 2n-1 diagonals going in the \\\ direction, we have to account for possible conflicts on those diagonals
                                              # diag2Conflicts[0] is (n,0), diag1Conflicts[1] is (n-1,0),(n,1), diag1Conflicts[2] is (n-2,0),(n-1,1),(n,2) ... etc
+
         self.board = np.zeros((n,n))
         self.queenPositions = []
         self.emptyColumns = set([ i for i in range(n) ])
@@ -48,7 +49,7 @@ class NQueens:
         #     self.addQueen(bestPos[0],bestPos[1])
 
     # returns true if problem is solved and all queens safe, false otherwise
-    def allQueensSafe(self): 
+    def allQueensSafe(self):
         for pos in self.queenPositions:
             if self.numConflicts(pos) > 0:
                 return False
@@ -151,7 +152,7 @@ def solveBoard(size):
 
         # General Note: when finding possible places to move the randomly picked queen, we retrict their search to the row that they're currently in
         # this means queens cannot move from one row to another nor should they consider this when checking for possible candidate positinos
-        # since every queen occupies a unique row 
+        # since every queen occupies a unique row
 
         pickedQueen = NQ.pickQueen()
         # sucess
@@ -195,7 +196,7 @@ def solveBoard(size):
 
         assert minConflictPosition != (-1,-1)
         NQ.moveQueen(pickedQueen,minConflictPosition)# move queen to least conflict spot
-        moves+=1    
+        moves+=1
 
     pos = NQ.queenPositions
     # for p in pos:

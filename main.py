@@ -1,12 +1,15 @@
 #CISC352 nqueens assignment 1
 import random
 import os
+import time
 
 queensOnBoard = []
 
 class Queen:
-    def __init__(self, inputCoords):
+    def __init__(self, name, inputCoords, numConflicts):
+        self.name = name
         self.coords = inputCoords
+        self.numConflicts = numConflicts
         self.conflict = False
 
     def setConflict(self, inputBool):
@@ -22,11 +25,17 @@ def calculateConflicts(curCoords): # this menthod calculates and returns the num
 
     for i in queensOnBoard:
 
-        if not ((i.coords[0] == x) and (i.coords[1] == y)):
-            if (i.coords[1] == y) or\
-               (i.coords[0] - i.coords[1]) == (x - y) or  \
-               (i.coords[0] + i.coords[1]) == (x + y):
-                    conflictCount = conflictCount + 1
+        if not ((i.coords[0] == x) and (i.coords[1] == y)): # if it is not the current queen
+            # if (i.coords[1] == y) or\ # if in the same column as current
+            #    (i.coords[0] - i.coords[1]) == (x - y) or  # if in in the left diagonal
+            #    (i.coords[0] + i.coords[1]) == (x + y): # if in the right diagonal
+            #         conflictCount = conflictCount + 1
+            if(i.coords[1] == y):
+                conflictCount += 1
+            if(i.coords[0] - i.coords[1]) == (x - y):
+                conflictCount += 1
+            if((i.coords[0] + i.coords[1]) == (x + y)):
+                conflictCount += 1
 
     return conflictCount
 
@@ -35,6 +44,15 @@ def generateBoard(n): # this method will generate an nxn board of n queens. It d
     queensOnBoard = []
 
     curRow = 1
+    usedCols = []
+
+    # while len(usedCols) < n:
+    #     randCol = random.randint(1,n)
+    #     if randCol not in usedCols:
+    #         curRow += 1
+    #         newQueen = Queen(curRow, (curRow, randCol), calculateConflicts((curRow, randCol)))
+    #         usedCols.append(randCol)
+    #         queensOnBoard.append(newQueen)
 
     for i in range(n): # for loop to iterate through each row
         lowestConflict = float('inf')
@@ -49,29 +67,33 @@ def generateBoard(n): # this method will generate an nxn board of n queens. It d
                 if(rand < 25):
                     bestColumn = curColumn
                     lowestConflict = curConflict
-        tempQueen = Queen((curRow, bestColumn)) # create a Queen with the newly found best coordinates
+        tempQueen = Queen(curRow, (curRow, bestColumn), lowestConflict) # create a Queen with the newly found best coordinates
         queensOnBoard.append(tempQueen) # add that Queen to the queensOnBoard list
         del tempQueen
         curRow = curRow + 1 # move on to next row to find optimal place to put Queen on that row
 
     for i in queensOnBoard: # for loop to iterate through the origial Queens in the list
-        if calculateConflicts(i.coords) > 0: # if that Queens has any conflicts, set its Bool go True
+        if i.numConflicts > 0: # if that Queens has any conflicts, set its Bool go True
             i.setConflict(True)
         else:                                # else set it to False
             i.setConflict(False)
+
+
 
 def solveBoard():
     global queensOnBoard
     n = len(queensOnBoard)
     moves = 0
 
+    randQueen = random.randint(0, n-1)
+    curQueen = queensOnBoard[randQueen] # choose a random Queen on the board
+
     while(not all(i.conflict is False for i in queensOnBoard)): # while there are still Queens with conflicts
-        randQueen = random.randint(1, n-1)
-        curQueen = queensOnBoard[randQueen] # choose a random Queen on the board
-        currentConflict = calculateConflicts(queensOnBoard[randQueen].coords) # calculate the conflict of that Queen
+        currentConflict = curQueen.numConflicts # calculate the conflict of that Queen
+        bestCol = -1
 
         # this helps to avoid getting stuck on local optimum
-        if moves == 60: # resets when number of moves hits 60 because it typicall takes less than 50 moves to complete any n queens problem
+        if moves == 100: # resets when number of moves hits 60 because it typicall takes less than 50 moves to complete any n queens problem
             queensOnBoard = []
             generateBoard(n)
             moves = 0
@@ -81,22 +103,35 @@ def solveBoard():
                 column = y + 1
 
                 if column != queensOnBoard[randQueen].coords[1]: # if we are not on the same column as the random Queen
-                    tempConflict = calculateConflicts((queensOnBoard[randQueen].coords[0], column)) # calculate the potential conflicts if the Queen moves to this col
+                    tempConflict = calculateConflicts((curQueen.coords[0], column)) # calculate the potential conflicts if the Queen moves to this col
                     if tempConflict < currentConflict: # if the number of potential conflicts is less than the currnet conflicts, move the Queen to that position
-                        queensOnBoard[randQueen].setCoords((curQueen.coords[0], column))
                         currentConflict = tempConflict
+                        bestCol = column
                         if currentConflict == 0: # if this new position has no conflicts, set that Queen's boolean to False
-                            queensOnBoard[randQueen].setConflict(False)
+                            curQueen.setConflict(False)
+
+
 
                     elif tempConflict == currentConflict: # if the number of potential conflicts is the same as the current conflicts, randonly choose the new or old position
                         rand2 = random.randint(1,51)
                         if(rand2 < 25):
-                            queensOnBoard[randQueen].setCoords((curQueen.coords[0], column))
                             currentConflict = tempConflict
+                            bestCol = column
                             if currentConflict == 0: # if this new position has no conflicts, set that Queen's boolean to False
-                                queensOnBoard[randQueen].setConflict(False)
+                                curQueen.setConflict(False)
 
-            moves = moves + 1 # a move is taken everytime the chosen Queen has conflicts and it goes through each potential column for that Queen
+
+        if bestCol != -1:
+            curQueen.setCoords((curQueen.coords[0], bestCol))
+            for j in queensOnBoard:
+                if j.coords[1] == bestCol:
+                    curQueen = j
+        else:
+            randQueen = random.randint(0, n-1)
+            curQueen = queensOnBoard[randQueen]
+
+
+        moves = moves + 1 # a move is taken everytime the chosen Queen has conflicts and it goes through each potential column for that Queen
 
     queensOnBoard.sort(key=lambda x: x.coords[0], reverse=False) # sort the Queens in the list by their x coordinates
     matrix = []
@@ -115,8 +150,11 @@ def main():
 
     for n in f1:
         print(n)
+        start = time.time()
         generateBoard(int(n)) # a board is generated for each n in the input file
         f2.write("%s\n" % str(solveBoard())) # writes the solution to each size n to the output file
+        print(time.time()-start)
+        print()
 
     f2.close()
 
