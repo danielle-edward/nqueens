@@ -214,7 +214,7 @@ def main():
         start = time.time()
         print(n)
         positions = solveBoard(int(n))
-        f2.write(str(positions))
+        f2.write("%s\n" % str(positions))
         end = time.time()
         print("Took " + str(end-start) + " seconds to execute")
     f2.close()
