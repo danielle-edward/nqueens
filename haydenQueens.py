@@ -7,9 +7,9 @@ class NQueens:
         self.n = n
         # instead of going through all queens multiple times to check for row, column, and diagonal conflicts, memoize them for easier conflict checks
         self.colConflicts = [0] * n          # This list keeps track of queens that conflict on the same column.
-        self.diag1Conflicts = [0] * (2*n-1)  # There are 2n-1 diagonals going in the /// direction, we have to account for possible conflicts on those diagonals
+        self.diag1Conflicts = [0] * (2*n-1)  # /// direction
                                              # diag1Conflicts[0] is (0,0), diag1Conflicts[1] is (1,0),(0,1), diag1Conflicts[2] is (2,0),(1,1),(0,2) ... etc
-        self.diag2Conflicts = [0] * (2*n-1)  # There are 2n-1 diagonals going in the \\\ direction, we have to account for possible conflicts on those diagonals
+        self.diag2Conflicts = [0] * (2*n-1)  # \\\ direction
                                              # diag2Conflicts[0] is (n,0), diag1Conflicts[1] is (n-1,0),(n,1), diag1Conflicts[2] is (n-2,0),(n-1,1),(n,2) ... etc
 
         self.board = np.zeros((n,n))
@@ -45,14 +45,6 @@ class NQueens:
 
             assert bestPos != (-1,-1) # make sure a valid position was found
             self.addQueen(bestPos[0],bestPos[1])
-        
-
-    # returns true if problem is solved and all queens safe, false otherwise
-    def allQueensSafe(self):
-        for pos in self.queenPositions:
-            if self.numConflicts(pos) > 0:
-                return False
-        return True
 
     # Given a row and a column, return how many current queen's could reach that square.
     def numConflicts(self,pos):
@@ -60,19 +52,17 @@ class NQueens:
         return self.colConflicts[col] + self.diag1Conflicts[(self.n-1)+(col-row)] + self.diag2Conflicts[col+row]
 
     def pickQueen(self):
-        num_vars_violated = 0
+        num_queens_conflicted = 0
         candidates = [] # possible queens to fix
         num_vios = 0 # The number of violations for a row/column position.
         for pos in self.queenPositions:
             num_vios = self.numConflicts(pos)
             if num_vios != 3: 
                 candidates.append(pos)
-        num_vars_violated = len(candidates)
-        if num_vars_violated == 0:  # If the array of possible options is empty return -1,-1
+        num_queens_conflicted = len(candidates)
+        if num_queens_conflicted == 0:  # If the array of possible options is empty return -1,-1
             return (-1,-1)
-        # print(self.board)
-        # print("candidates:",candidates)
-        # x = input()
+        # choose random candidate queen who is in conflict
         return random.choice(candidates)
 
     # places a queen and adds conflicts resulting in placing the queen there
@@ -101,7 +91,7 @@ class NQueens:
         self.diag2Conflicts[row+col] -= 1
         self.updateEmptyColumns(col)
 
-    # moves quen from startPos to endPos
+    # moves queen from startPos to endPos
     def moveQueen(self,startPos,endPos):
         # print("Moving queen from",startPos,"to",endPos)
         self.removeQueen(startPos[0],startPos[1])
@@ -135,6 +125,14 @@ class NQueens:
                 candidates.append(col)
         choice = random.choice(candidates)
         return choice
+    
+    def printQueens(self):
+        sortedPos = sorted(self.queenPositions, key = lambda x: x[0]) 
+        result = []
+        for pos in sortedPos:
+            result.append(pos[1])
+        return result
+        
 
 # solver
 def solveBoard(size):
@@ -142,7 +140,7 @@ def solveBoard(size):
     NQ = NQueens(n) # create initial board of size nxn
     moves = 0
     print("Starting...")
-    while not NQ.allQueensSafe():
+    while True:
         # print(moves)
         if moves > 100:
             print("Resetting...")
@@ -153,11 +151,15 @@ def solveBoard(size):
         # this means queens cannot move from one row to another nor should they consider this when checking for possible candidate positinos
         # since every queen occupies a unique row
 
+        # pick the queen to be moved
         pickedQueen = NQ.pickQueen()
-        # sucess
+
+        # if there is no queen to fix, break and end
+        # success
         if pickedQueen == (-1,-1):
             break
 
+        # set initial value
         minConflictPosition = (-1,-1)
 
         found = False #skip the next rest of the search heuristics if a position has been found
@@ -197,10 +199,7 @@ def solveBoard(size):
         NQ.moveQueen(pickedQueen,minConflictPosition)# move queen to least conflict spot
         moves+=1
 
-    pos = NQ.queenPositions
-    # for p in pos:
-    #     print(p)
-    return pos
+    return NQ.printQueens()
 
 def main():
     cwd = os.getcwd().replace('\\', '/') # gets the current working directory of this python file
@@ -216,9 +215,7 @@ def main():
         start = time.time()
         print(n)
         positions = solveBoard(int(n))
-        f2.write(n+'\n')
-        for p in positions:
-            f2.write(str(p)+'\n')
+        f2.write(str(positions))
         end = time.time()
         print("Took " + str(end-start) + " seconds to execute")
     f2.close()
