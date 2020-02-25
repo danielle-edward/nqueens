@@ -133,7 +133,6 @@ class NQueens:
             result.append(pos[1])
         return result
         
-
 # solver
 def solveBoard(size):
     n = size
