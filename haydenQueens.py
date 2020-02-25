@@ -19,34 +19,33 @@ class NQueens:
 
     # use NASA paper algorithm to initially place queens
     def initialize(self,n):
+        # for row in range(n):
+        #     colToPlace = self.minConflicts(row)
+        #     self.addQueen(row,colToPlace)
+
+        # populate each subsequent row with a queen
         for row in range(n):
-            colToPlace = self.minConflicts(row)
-            self.addQueen(row,colToPlace)
+            bestPos = (-1,-1)
+            found = False # if a "best" position is found
 
-        # place the first queen randomly on the first row
-        # randomIndex = random.randint(0,n-1)
-        # self.addQueen(0,randomIndex)
-
-        # # populate each subsequent row with a queen
-        # for row in range(1,n):
-        #     bestPos = (-1,-1)
-        #     found = False # if a "best" position is found
-
-        #     # first look for 0 conflict positions (taken from NASA paper initialization type 2)
-        #     for col in self.emptyColumns:
-        #         conflicts = self.numConflicts((row,col))
-        #         if conflicts == 0:
-        #             bestPos = (row,col)
-        #             found = True
-        #             break
+            # first look for 0 conflict positions (taken from NASA paper initialization type 2)
+            sample = 0
+            while not found and sample < n:
+                col = random.choice(tuple(self.emptyColumns))
+                conflicts = self.numConflicts((row,col))
+                if conflicts == 0:
+                    bestPos = (row,col)
+                    found = True
+                sample += 1
             
-        #     # if not found, choose a random empty column (taken from NASA paper initialization type 2)
-        #     if not found:
-        #         col = random.choice(tuple(self.emptyColumns))
-        #         bestPos = (row,col)
+            # if not found, choose a random empty column (taken from NASA paper initialization type 2)
+            if not found:
+                col = random.choice(tuple(self.emptyColumns))
+                bestPos = (row,col)
 
-        #     assert bestPos != (-1,-1) # make sure a valid position was found
-        #     self.addQueen(bestPos[0],bestPos[1])
+            assert bestPos != (-1,-1) # make sure a valid position was found
+            self.addQueen(bestPos[0],bestPos[1])
+        
 
     # returns true if problem is solved and all queens safe, false otherwise
     def allQueensSafe(self):
